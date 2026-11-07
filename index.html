@@ -1,0 +1,544 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>90-Day Success Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#f4f6fb;--panel:#fff;--ink:#172033;--muted:#68748a;--line:#e5e9f1;--primary:#5267e8;--green:#159b72;--red:#d64b59;--shadow:0 8px 28px #1b2b4a0c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+button,input,textarea,select{font:inherit}button{cursor:pointer;border:0;border-radius:10px;padding:10px 14px;background:var(--primary);color:white;font-weight:650}button.secondary{background:#edf0ff;color:#3549c5}button.danger{background:#fff0f0;color:#bd3545}button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}button:disabled{opacity:.5;cursor:not-allowed}
+input,textarea,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);outline:none}input:focus,textarea:focus,select:focus{border-color:var(--primary)}textarea{min-height:85px;resize:vertical}
+label{display:block;font-size:13px;font-weight:650;color:var(--muted);margin:12px 0 6px}
+h1,h2,h3,p{margin-top:0}h1{font-size:24px;margin-bottom:4px}h2{font-size:19px}h3{font-size:15px}
+.small{font-size:12px;color:var(--muted)}.muted{color:var(--muted)}.hidden{display:none!important}
+.auth{min-height:100vh;display:grid;place-items:center;padding:20px}.auth-card{width:min(440px,100%);background:white;border:1px solid var(--line);border-radius:20px;padding:28px;box-shadow:var(--shadow)}
+.logo{width:44px;height:44px;border-radius:13px;background:#e9edff;color:var(--primary);display:grid;place-items:center;font-size:22px;font-weight:900;margin-bottom:15px}
+.app{display:none;min-height:100vh}.sidebar{position:fixed;inset:0 auto 0 0;width:245px;background:#17213a;color:#fff;padding:22px 15px;overflow:auto;z-index:5}
+.brand{font-size:17px;font-weight:800;padding:5px 10px 22px}.brand span{color:#9eacff}
+.nav-label{font-size:10px;color:#929db7;text-transform:uppercase;letter-spacing:1.3px;padding:15px 10px 7px}
+.nav button{width:100%;text-align:left;background:transparent;color:#c9d0e1;padding:10px;border-radius:9px;font-weight:550;margin:2px 0}
+.nav button.active,.nav button:hover{background:#2a3758;color:#fff}
+.main{margin-left:245px;padding:25px;max-width:1500px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:24px}
+.top-actions{display:flex;align-items:center;gap:9px}.page{display:none}.page.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:15px}.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:18px;box-shadow:var(--shadow);min-width:0}
+.span-3{grid-column:span 3}.span-4{grid-column:span 4}.span-5{grid-column:span 5}.span-6{grid-column:span 6}.span-7{grid-column:span 7}.span-8{grid-column:span 8}.span-12{grid-column:span 12}
+.stat{font-size:29px;font-weight:800;letter-spacing:-1px;margin:6px 0}.stat-label{color:var(--muted);font-size:13px}
+.progress{height:9px;background:#edf0f5;border-radius:20px;overflow:hidden;margin:10px 0}.progress>div{height:100%;background:linear-gradient(90deg,#5267e8,#20b58a);border-radius:20px}
+.row{display:flex;align-items:center;gap:10px}.between{justify-content:space-between}.wrap{flex-wrap:wrap}.grow{flex:1;min-width:0}
+.stack{display:grid;gap:10px}.task{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}.task:last-child{border:0}.task input{width:18px;height:18px;margin-top:3px;accent-color:var(--green)}.task.done .task-name{text-decoration:line-through;color:#8992a4}
+.actions{display:flex;gap:7px;flex-wrap:wrap}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}.form-grid .full{grid-column:1/-1}
+.table{width:100%;border-collapse:collapse}.table th,.table td{text-align:left;padding:11px 8px;border-bottom:1px solid var(--line);font-size:13px}.table th{color:var(--muted)}
+.pill{display:inline-block;background:#eef1ff;color:#4659cf;border-radius:30px;padding:4px 9px;font-size:11px;font-weight:700}
+.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}.day{min-height:64px;border:1px solid var(--line);border-radius:9px;padding:6px;font-size:12px;background:#fff}.day .dot{height:6px;border-radius:9px;background:#e9edf4;margin-top:8px}.day.complete .dot{background:var(--green)}.day.partial .dot{background:#e5a23b}
+.notice{padding:11px 13px;border-radius:10px;background:#f0f3ff;color:#4052b9;font-size:13px;margin:12px 0}.empty{padding:20px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
+.file-item{padding:12px 0;border-bottom:1px solid var(--line)}.file-item:last-child{border:0}
+#toast{position:fixed;bottom:20px;right:20px;background:#17213a;color:white;padding:12px 17px;border-radius:10px;z-index:20;display:none;max-width:min(400px,90vw);box-shadow:var(--shadow)}
+@media(max-width:900px){.sidebar{width:205px}.main{margin-left:205px;padding:18px}.span-3,.span-4{grid-column:span 6}}
+@media(max-width:650px){.sidebar{position:static;width:auto;padding:10px}.brand{padding:5px 8px 10px}.nav{display:flex;overflow-x:auto;gap:4px}.nav-label{display:none}.nav button{white-space:nowrap;width:auto;font-size:12px;padding:8px}.app{display:none}.main{margin:0;padding:14px}.topbar{align-items:flex-start;flex-direction:column}.span-3,.span-4,.span-5,.span-6,.span-7,.span-8{grid-column:span 12}.form-grid{grid-template-columns:1fr}.calendar{gap:3px}.day{min-height:48px;padding:4px;font-size:10px}}
+</style>
+</head>
+<body>
+
+<section id="authScreen" class="auth">
+ <div class="auth-card">
+  <div class="logo">90</div>
+  <h1>90-Day Success Tracker</h1>
+  <p class="muted">Build habits. Track progress. Prove your work.</p>
+  <div class="notice">Sign in with your email or phone number. Your account data is private.</div>
+  <label>Login method</label>
+  <select id="authMethod"><option value="email">Email OTP</option><option value="phone">Phone OTP</option></select>
+  <label id="identityLabel">Email address</label>
+  <input id="identity" type="text" placeholder="you@example.com" autocomplete="username">
+  <div class="row" style="margin-top:12px">
+   <button id="sendOtpBtn" onclick="sendOtp()">Send login code</button>
+  </div>
+  <div id="verifyArea" class="hidden">
+   <label>Verification code</label>
+   <input id="otpCode" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter OTP">
+   <button style="margin-top:12px;width:100%" onclick="verifyOtp()">Verify and sign in</button>
+  </div>
+  <p class="small" id="authMessage" style="margin-top:15px"></p>
+ </div>
+</section>
+
+<div id="app" class="app">
+ <aside class="sidebar">
+  <div class="brand">90-Day <span>Success</span></div>
+  <nav class="nav">
+   <div class="nav-label">Overview</div>
+   <button class="active" data-page="dashboard">◫ Dashboard</button>
+   <button data-page="daily">☑ Daily Checklist</button>
+   <button data-page="plan">✦ My 30-Day Plan</button>
+   <button data-page="calendar">▦ Progress Calendar</button>
+   <div class="nav-label">Trackers</div>
+   <button data-page="ielts">◎ IELTS Tracker</button>
+   <button data-page="cyber">⌘ Cybersecurity Project</button>
+   <button data-page="research">▤ Research Paper</button>
+   <button data-page="roadmap">▥ 13-Week Roadmap</button>
+   <button data-page="routine">◷ Daily Routine</button>
+   <div class="nav-label">Evidence & Data</div>
+   <button data-page="uploads">⇧ Weekly Proof Uploads</button>
+   <button data-page="reports">▤ Weekly Reports</button>
+   <button data-page="settings">⚙ Backup & Settings</button>
+  </nav>
+  <div style="padding:18px 8px 5px" class="small">Private cloud workspace</div>
+ </aside>
+
+ <main class="main">
+  <header class="topbar">
+   <div><h1 id="pageTitle">Dashboard</h1><div class="small" id="todayLabel"></div></div>
+   <div class="top-actions"><span class="small" id="userLabel"></span><button class="ghost" onclick="logout()">Log out</button></div>
+  </header>
+
+  <section id="page-dashboard" class="page active">
+   <div class="grid">
+    <div class="card span-3"><div class="stat-label">90-day completion</div><div class="stat" id="overallPercent">0%</div><div class="progress"><div id="overallBar" style="width:0%"></div></div></div>
+    <div class="card span-3"><div class="stat-label">Tasks completed</div><div class="stat" id="doneCount">0</div><div class="small">Across your daily checklist</div></div>
+    <div class="card span-3"><div class="stat-label">Proof files</div><div class="stat" id="uploadCount">0</div><div class="small">Weekly evidence uploaded</div></div>
+    <div class="card span-3"><div class="stat-label">Current streak</div><div class="stat" id="streakCount">0</div><div class="small">Consecutive active days</div></div>
+    <div class="card span-7"><div class="row between"><h2>Today's tasks</h2><button class="secondary" onclick="showPage('daily')">View checklist</button></div><div id="dashboardTasks" class="stack"></div></div>
+    <div class="card span-5"><h2>Your current goal</h2><h3 id="dashGoal">Set your goal</h3><p id="dashDescription" class="muted small">Create a personal plan to get started.</p><div class="progress"><div id="planBar" style="width:0%"></div></div><div class="small" id="planStatus"></div><button class="secondary" style="margin-top:12px" onclick="showPage('plan')">Edit plan</button></div>
+    <div class="card span-12"><h2>Tracker overview</h2><div class="grid">
+     <div class="span-4"><b>IELTS</b><p class="small" id="dashIelts">No target set</p></div>
+     <div class="span-4"><b>Cybersecurity project</b><p class="small" id="dashCyber">No project tasks yet</p></div>
+     <div class="span-4"><b>Research paper</b><p class="small" id="dashResearch">No research tasks yet</p></div>
+    </div></div>
+   </div>
+  </section>
+
+  <section id="page-daily" class="page">
+   <div class="card">
+    <div class="row between wrap"><div><h2>Daily Checklist</h2><p class="small">Add tasks and mark them complete each day.</p></div><input id="taskDate" type="date" style="max-width:180px" onchange="renderDaily()"></div>
+    <div class="form-grid"><div class="full"><label>New task</label><input id="newTask" placeholder="Example: Study IELTS for 1 hour"></div><div><label>Category</label><select id="taskCategory"><option>Study</option><option>Health</option><option>Career</option><option>Project</option><option>Personal</option><option>Other</option></select></div><div style="display:flex;align-items:end"><button onclick="addTask()" style="width:100%">+ Add task</button></div></div>
+    <div class="row between" style="margin-top:22px"><b id="dailyCount">0 tasks</b><span class="small" id="dailyPercent">0% complete</span></div><div class="progress"><div id="dailyBar" style="width:0%"></div></div><div id="dailyTasks" class="stack"></div>
+   </div>
+  </section>
+
+  <section id="page-plan" class="page">
+   <div class="card"><h2>My Personal 30-Day Plan</h2><p class="small">Set your goal, description and start date. Your plan is saved to your account.</p>
+    <label>Main goal</label><input id="planGoal" placeholder="Example: Improve my English and coding skills">
+    <label>Description</label><textarea id="planDescription" placeholder="What do you want to achieve in 30 days?"></textarea>
+    <div class="form-grid"><div><label>Start date</label><input id="planStart" type="date"></div><div><label>Duration</label><input value="30 days" disabled></div></div>
+    <button style="margin-top:15px" onclick="savePlan()">Save my plan</button>
+   </div>
+  </section>
+
+  <section id="page-calendar" class="page">
+   <div class="card"><div class="row between"><h2>90-Day Progress Calendar</h2><span class="small">Green = complete · Amber = partial</span></div><div id="calendarGrid" class="calendar"></div></div>
+  </section>
+
+  <section id="page-ielts" class="page">
+   <div class="card"><h2>IELTS Preparation Tracker</h2><div class="form-grid">
+    <div><label>Target band score</label><input id="ieltsTarget" type="number" min="0" max="9" step=".5" placeholder="7.5"></div>
+    <div><label>Current band score</label><input id="ieltsCurrent" type="number" min="0" max="9" step=".5" placeholder="6"></div>
+    <div class="full"><label>Study notes / next steps</label><textarea id="ieltsNotes" placeholder="Listening, Reading, Writing, Speaking..."></textarea></div>
+   </div><button style="margin-top:12px" onclick="saveIelts()">Save IELTS progress</button></div>
+  </section>
+
+  <section id="page-cyber" class="page">
+   <div class="card"><h2>LLM Cybersecurity Project Tracker</h2><label>Project title</label><input id="cyberTitle" placeholder="LLM Cybersecurity Project"><label>Project tasks</label><div class="row"><input id="cyberTaskInput" placeholder="Add a project milestone"><button onclick="addProjectTask('cyber')">Add</button></div><div id="cyberTasks" class="stack" style="margin-top:15px"></div><button class="secondary" onclick="saveProject('cyber')" style="margin-top:12px">Save project</button></div>
+  </section>
+
+  <section id="page-research" class="page">
+   <div class="card"><h2>Research Paper Tracker</h2><label>Paper title</label><input id="researchTitle" placeholder="Research paper title"><label>Research tasks</label><div class="row"><input id="researchTaskInput" placeholder="Add a research milestone"><button onclick="addProjectTask('research')">Add</button></div><div id="researchTasks" class="stack" style="margin-top:15px"></div><button class="secondary" onclick="saveProject('research')" style="margin-top:12px">Save research</button></div>
+  </section>
+
+  <section id="page-roadmap" class="page">
+   <div class="card"><h2>13-Week Roadmap</h2><p class="small">Break your 90-day journey into weekly milestones.</p><div class="form-grid"><div><label>Week number</label><select id="roadmapWeek"></select></div><div><label>Milestone</label><input id="roadmapTitle" placeholder="Weekly goal"></div><div class="full"><label>Notes</label><textarea id="roadmapNotes" placeholder="What will you complete this week?"></textarea></div></div><button onclick="saveRoadmap()" style="margin-top:12px">Save weekly milestone</button><div id="roadmapList" style="margin-top:20px"></div></div>
+  </section>
+
+  <section id="page-routine" class="page">
+   <div class="card"><h2>Daily Routine</h2><p class="small">Create a routine and check off each activity.</p><div class="row"><input id="routineInput" placeholder="Example: 7:00 AM — Morning exercise"><button onclick="addRoutine()">Add</button></div><div id="routineList" class="stack" style="margin-top:15px"></div></div>
+  </section>
+
+  <section id="page-uploads" class="page">
+   <div class="card"><h2>Weekly Proof of Work</h2><p class="small">Upload screenshots, photos, PDF, Word documents or project files. Maximum 25 MB per file.</p>
+    <label>Week</label><select id="uploadWeek"></select>
+    <label>Evidence title</label><input id="uploadTitle" placeholder="Example: IELTS mock test result">
+    <label>Description</label><textarea id="uploadDescription" placeholder="Describe what this file proves..."></textarea>
+    <label>Select file</label><input id="uploadFile" type="file">
+    <button id="uploadButton" onclick="uploadProof()" style="margin-top:13px">Upload proof</button>
+    <div id="uploadList" style="margin-top:22px"></div>
+   </div>
+  </section>
+
+  <section id="page-reports" class="page">
+   <div class="card"><h2>Weekly Progress Reports</h2><p class="small">Your weekly task completion and proof-of-work summary.</p><div id="weeklyReports"></div></div>
+  </section>
+
+  <section id="page-settings" class="page">
+   <div class="card"><h2>Backup & Settings</h2><p class="small">Download a copy of your tracker data or restore from a JSON backup.</p>
+    <div class="actions"><button onclick="exportBackup()">Download JSON backup</button><button class="secondary" onclick="document.getElementById('restoreFile').click()">Restore backup</button><input id="restoreFile" type="file" accept=".json,application/json" class="hidden" onchange="restoreBackup(event)"></div>
+    <div class="notice">Your tracker records are stored in your private Supabase account. Your proof files are stored in private cloud storage.</div>
+    <h3>Account</h3><p id="settingsEmail" class="small"></p><button class="danger" onclick="logout()">Log out</button>
+   </div>
+  </section>
+ </main>
+</div>
+<div id="toast"></div>
+
+<script>
+/* =========================================================
+   1. SUPABASE CONFIGURATION
+   Replace these with your own Supabase Project URL and
+   anon/publishable key. Never use the service_role key here.
+========================================================= */
+const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+const BUCKET = "weekly-proof";
+let client = null;
+let currentUser = null;
+let db = null;
+let saveTimer = null;
+
+const today = () => new Date().toLocaleDateString("en-CA");
+const uid = () => crypto.randomUUID();
+const blankData = () => ({
+ plan:{goal:"",description:"",startDate:today(),duration:30},
+ tasks:[],
+ ielts:{target:"",current:"",notes:""},
+ cyber:{title:"",tasks:[]},
+ research:{title:"",tasks:[]},
+ roadmap:{},
+ routine:[],
+ createdAt:new Date().toISOString()
+});
+const $ = id => document.getElementById(id);
+const safe = value => String(value ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(message){const t=$("toast");t.textContent=message;t.style.display="block";clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.display="none",3200)}
+function percent(done,total){return total?Math.round(done/total*100):0}
+function weekOptions(){for(const id of ["uploadWeek","roadmapWeek"]){$(id).innerHTML=Array.from({length:13},(_,i)=>`<option value="${i+1}">Week ${i+1}</option>`).join("")}}
+function initSupabase(){
+ if(!window.supabase){$("authMessage").textContent="Could not load Supabase. Check your internet connection.";return false}
+ if(SUPABASE_URL.includes("YOUR_")||SUPABASE_ANON_KEY.includes("YOUR_")){$("authMessage").textContent="First add your Supabase Project URL and anon/publishable key inside index.html.";return false}
+ client=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+ return true;
+}
+
+/* AUTHENTICATION: EMAIL OTP OR PHONE SMS OTP */
+$("authMethod").addEventListener("change",()=>{
+ const phone=$("authMethod").value==="phone";
+ $("identityLabel").textContent=phone?"Phone number with country code":"Email address";
+ $("identity").placeholder=phone?"+8801XXXXXXXXX":"you@example.com";
+ $("identity").value="";
+ $("verifyArea").classList.add("hidden");
+ $("authMessage").textContent="";
+});
+async function sendOtp(){
+ if(!client&&!initSupabase())return;
+ const method=$("authMethod").value,identity=$("identity").value.trim();
+ if(!identity){toast("Enter your email or phone number.");return}
+ if(method==="phone"&&!/^\+[1-9]\d{7,14}$/.test(identity)){toast("Use international phone format, e.g. +8801XXXXXXXXX");return}
+ $("sendOtpBtn").disabled=true;
+ $("authMessage").textContent="Sending verification code...";
+ try{
+  const payload=method==="email"?{email:identity,options:{shouldCreateUser:true}}:{phone:identity,options:{shouldCreateUser:true}};
+  const {error}=await client.auth.signInWithOtp(payload);
+  if(error)throw error;
+  $("verifyArea").classList.remove("hidden");
+  $("authMessage").textContent="Code sent. Check your email or SMS.";
+ }catch(e){$("authMessage").textContent=e.message}
+ finally{$("sendOtpBtn").disabled=false}
+}
+async function verifyOtp(){
+ const method=$("authMethod").value,identity=$("identity").value.trim(),token=$("otpCode").value.trim();
+ if(!token){toast("Enter the verification code.");return}
+ $("authMessage").textContent="Verifying...";
+ try{
+  const payload=method==="email"?{email:identity,token,type:"email"}:{phone:identity,token,type:"sms"};
+  const {data,error}=await client.auth.verifyOtp(payload);
+  if(error)throw error;
+  await startApp(data.user);
+ }catch(e){$("authMessage").textContent=e.message}
+}
+async function startApp(user){
+ currentUser=user;
+ $("authScreen").classList.add("hidden");
+ $("app").style.display="block";
+ $("userLabel").textContent=user.email||user.phone||"Signed in";
+ $("settingsEmail").textContent=user.email||user.phone||"Your account";
+ $("todayLabel").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+ await loadCloudData();
+ renderAll();
+}
+async function logout(){
+ if(client)await client.auth.signOut();
+ currentUser=null;db=null;
+ $("app").style.display="none";$("authScreen").classList.remove("hidden");
+ $("verifyArea").classList.add("hidden");$("otpCode").value="";
+}
+async function loadCloudData(){
+ try{
+  const {data,error}=await client.from("tracker_data").select("data").eq("user_id",currentUser.id).maybeSingle();
+  if(error)throw error;
+  db=data?.data||blankData();
+  db=normalizeData(db);
+  if(!data)await saveCloud(true);
+ }catch(e){toast("Could not load cloud data: "+e.message);db=blankData()}
+}
+function normalizeData(d){
+ const b=blankData();
+ return {...b,...d,plan:{...b.plan,...d.plan},ielts:{...b.ielts,...d.ielts},cyber:{...b.cyber,...d.cyber},research:{...b.research,...d.research},tasks:Array.isArray(d.tasks)?d.tasks:[],routine:Array.isArray(d.routine)?d.routine:[],roadmap:d.roadmap||{}};
+}
+async function saveCloud(silent=false){
+ if(!client||!currentUser||!db)return;
+ try{
+  const {error}=await client.from("tracker_data").upsert({user_id:currentUser.id,data:db,updated_at:new Date().toISOString()},{onConflict:"user_id"});
+  if(error)throw error;
+  if(!silent)toast("Saved to your private cloud account.");
+ }catch(e){toast("Cloud save failed: "+e.message)}
+}
+function saveSoon(){
+ clearTimeout(saveTimer);
+ saveTimer=setTimeout(()=>saveCloud(true),700);
+}
+function renderAll(){
+ weekOptions();loadPlanForm();loadIeltsForm();loadProjectForm("cyber");loadProjectForm("research");
+ renderDashboard();renderDaily();renderCalendar();renderRoadmap();renderRoutine();loadUploads();renderReports();
+}
+function showPage(name){
+ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+ $("page-"+name).classList.add("active");
+ document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===name));
+ const nav=document.querySelector(`[data-page="${name}"]`);
+ $("pageTitle").textContent=nav?nav.textContent.trim():"Dashboard";
+ if(name==="uploads")loadUploads();
+ if(name==="reports")renderReports();
+}
+document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>showPage(b.dataset.page)));
+
+/* DAILY CHECKLIST */
+$("taskDate").value=today();
+function tasksForDate(date){return db.tasks.filter(t=>t.date===date)}
+function addTask(){
+ const text=$("newTask").value.trim();if(!text)return toast("Enter a task first.");
+ db.tasks.push({id:uid(),date:$("taskDate").value||today(),text,category:$("taskCategory").value,done:false});
+ $("newTask").value="";saveSoon();renderAll();
+}
+function toggleTask(id,checked){
+ const t=db.tasks.find(x=>x.id===id);if(t)t.done=checked;
+ saveSoon();renderAll();
+}
+function deleteTask(id){db.tasks=db.tasks.filter(t=>t.id!==id);saveSoon();renderAll()}
+function taskHTML(t){
+ return `<div class="task ${t.done?"done":""}"><input type="checkbox" ${t.done?"checked":""} onchange="toggleTask('${t.id}',this.checked)"><div class="grow"><div class="task-name">${safe(t.text)}</div><div class="small">${safe(t.category||"General")}</div></div><button class="ghost" onclick="deleteTask('${t.id}')">Delete</button></div>`;
+}
+function renderDaily(){
+ const date=$("taskDate").value||today(),list=tasksForDate(date),done=list.filter(t=>t.done).length,p=percent(done,list.length);
+ $("dailyCount").textContent=`${done} of ${list.length} tasks completed`;
+ $("dailyPercent").textContent=p+"% complete";$("dailyBar").style.width=p+"%";
+ $("dailyTasks").innerHTML=list.length?list.map(taskHTML).join(""):'<div class="empty">No tasks for this day. Add your first task above.</div>';
+}
+function renderDashboard(){
+ const all=db.tasks,done=all.filter(t=>t.done).length,p=percent(done,all.length);
+ $("overallPercent").textContent=p+"%";$("overallBar").style.width=p+"%";
+ $("doneCount").textContent=done;$("uploadCount").textContent=document.querySelectorAll(".file-item").length||0;
+ $("dashGoal").textContent=db.plan.goal||"Set your goal";
+ $("dashDescription").textContent=db.plan.description||"Create a personal plan to get started.";
+ const start=new Date((db.plan.startDate||today())+"T00:00:00"),elapsed=Math.max(0,Math.floor((new Date(today()+"T00:00:00")-start)/86400000));
+ $("planBar").style.width=Math.min(100,Math.round(elapsed/30*100))+"%";
+ $("planStatus").textContent=`Day ${Math.min(30,elapsed+1)} of 30`;
+ const todayTasks=tasksForDate(today());
+ $("dashboardTasks").innerHTML=todayTasks.length?todayTasks.slice(0,6).map(taskHTML).join(""):'<div class="empty">No tasks scheduled for today.</div>';
+ $("dashIelts").textContent=db.ielts.current?`Current ${db.ielts.current} / Target ${db.ielts.target||"not set"}`:"No IELTS score entered";
+ $("dashCyber").textContent=`${db.cyber.tasks.filter(t=>t.done).length}/${db.cyber.tasks.length} milestones completed`;
+ $("dashResearch").textContent=`${db.research.tasks.filter(t=>t.done).length}/${db.research.tasks.length} milestones completed`;
+ $("streakCount").textContent=calculateStreak();
+}
+function calculateStreak(){
+ let count=0,d=new Date(today()+"T00:00:00");
+ while(true){
+  const key=d.toLocaleDateString("en-CA");
+  if(!db.tasks.some(t=>t.date===key&&t.done))break;
+  count++;d.setDate(d.getDate()-1);
+ }
+ return count;
+}
+
+/* PERSONAL 30-DAY PLAN */
+function loadPlanForm(){
+ $("planGoal").value=db.plan.goal||"";$("planDescription").value=db.plan.description||"";
+ $("planStart").value=db.plan.startDate||today();
+}
+function savePlan(){
+ db.plan={goal:$("planGoal").value.trim(),description:$("planDescription").value.trim(),startDate:$("planStart").value||today(),duration:30};
+ saveCloud();renderDashboard();
+}
+
+/* CALENDAR */
+function renderCalendar(){
+ const start=new Date((db.plan.startDate||today())+"T00:00:00");
+ let html=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(x=>`<div class="small" style="text-align:center">${x}</div>`).join("");
+ const offset=start.getDay();for(let i=0;i<offset;i++)html+='<div></div>';
+ for(let i=0;i<90;i++){
+  const d=new Date(start);d.setDate(d.getDate()+i);const key=d.toLocaleDateString("en-CA"),list=tasksForDate(key),done=list.filter(t=>t.done).length;
+  const state=list.length&&done===list.length?"complete":done?"partial":"";
+  html+=`<div class="day ${state}"><b>${d.getDate()}</b><div class="small">Day ${i+1}</div><div class="dot"></div><div class="small">${done}/${list.length}</div></div>`;
+ }
+ $("calendarGrid").innerHTML=html;
+}
+
+/* IELTS */
+function loadIeltsForm(){
+ $("ieltsTarget").value=db.ielts.target;$("ieltsCurrent").value=db.ielts.current;$("ieltsNotes").value=db.ielts.notes;
+}
+function saveIelts(){
+ db.ielts={target:$("ieltsTarget").value,current:$("ieltsCurrent").value,notes:$("ieltsNotes").value};
+ saveCloud();renderDashboard();
+}
+
+/* PROJECT TRACKERS */
+function loadProjectForm(type){
+ const x=db[type];$(type+"Title").value=x.title||"";renderProjectTasks(type);
+}
+function addProjectTask(type){
+ const input=$(type+"TaskInput"),text=input.value.trim();if(!text)return;
+ db[type].tasks.push({id:uid(),text,done:false});input.value="";renderProjectTasks(type);saveSoon();
+}
+function toggleProjectTask(type,id,checked){
+ const t=db[type].tasks.find(x=>x.id===id);if(t)t.done=checked;renderProjectTasks(type);saveSoon();renderDashboard();
+}
+function removeProjectTask(type,id){
+ db[type].tasks=db[type].tasks.filter(t=>t.id!==id);renderProjectTasks(type);saveSoon();
+}
+function renderProjectTasks(type){
+ const list=db[type].tasks;
+ $(type+"Tasks").innerHTML=list.length?list.map(t=>`<div class="task ${t.done?"done":""}"><input type="checkbox" ${t.done?"checked":""} onchange="toggleProjectTask('${type}','${t.id}',this.checked)"><div class="grow task-name">${safe(t.text)}</div><button class="ghost" onclick="removeProjectTask('${type}','${t.id}')">Delete</button></div>`).join(""):'<div class="empty">No milestones added yet.</div>';
+}
+function saveProject(type){
+ db[type].title=$(type+"Title").value.trim();saveCloud();renderDashboard();
+}
+
+/* 13-WEEK ROADMAP */
+function saveRoadmap(){
+ const week=Number($("roadmapWeek").value);
+ db.roadmap[week]={title:$("roadmapTitle").value.trim(),notes:$("roadmapNotes").value.trim()};
+ $("roadmapTitle").value="";$("roadmapNotes").value="";
+ saveCloud();renderRoadmap();
+}
+function renderRoadmap(){
+ let html="";
+ for(let i=1;i<=13;i++){
+  const x=db.roadmap[i]||{};
+  html+=`<div class="task"><div class="grow"><b>Week ${i}</b><div>${safe(x.title||"No milestone set")}</div><div class="small">${safe(x.notes||"")}</div></div><button class="ghost" onclick="editRoadmap(${i})">Edit</button></div>`;
+ }
+ $("roadmapList").innerHTML=html;
+}
+function editRoadmap(week){
+ $("roadmapWeek").value=week;$("roadmapTitle").value=db.roadmap[week]?.title||"";$("roadmapNotes").value=db.roadmap[week]?.notes||"";
+}
+
+/* DAILY ROUTINE */
+function addRoutine(){
+ const text=$("routineInput").value.trim();if(!text)return;
+ db.routine.push({id:uid(),text,done:false});$("routineInput").value="";
+ saveSoon();renderRoutine();
+}
+function renderRoutine(){
+ $("routineList").innerHTML=db.routine.length?db.routine.map(t=>`<div class="task ${t.done?"done":""}"><input type="checkbox" ${t.done?"checked":""} onchange="toggleRoutine('${t.id}',this.checked)"><div class="grow task-name">${safe(t.text)}</div><button class="ghost" onclick="deleteRoutine('${t.id}')">Delete</button></div>`).join(""):'<div class="empty">Add your daily routine activities.</div>';
+}
+function toggleRoutine(id,checked){const t=db.routine.find(x=>x.id===id);if(t)t.done=checked;saveSoon();renderRoutine()}
+function deleteRoutine(id){db.routine=db.routine.filter(x=>x.id!==id);saveSoon();renderRoutine()}
+
+/* PRIVATE WEEKLY PROOF STORAGE */
+async function uploadProof(){
+ const file=$("uploadFile").files[0],title=$("uploadTitle").value.trim();
+ if(!file||!title)return toast("Add a title and choose a file.");
+ if(file.size>25*1024*1024)return toast("File is larger than 25 MB.");
+ const btn=$("uploadButton");btn.disabled=true;btn.textContent="Uploading...";
+ try{
+  const path=`${currentUser.id}/${uid()}-${file.name.replace(/[^\w.\-]/g,"_")}`;
+  const {error:upErr}=await client.storage.from(BUCKET).upload(path,file,{upsert:false,contentType:file.type||"application/octet-stream"});
+  if(upErr)throw upErr;
+  const {error:dbErr}=await client.from("proof_uploads").insert({
+   user_id:currentUser.id,week_number:Number($("uploadWeek").value),title,
+   description:$("uploadDescription").value.trim(),file_name:file.name,
+   file_path:path,file_type:file.type,file_size:file.size
+  });
+  if(dbErr){await client.storage.from(BUCKET).remove([path]);throw dbErr}
+  $("uploadTitle").value="";$("uploadDescription").value="";$("uploadFile").value="";
+  toast("Proof uploaded successfully.");await loadUploads();renderDashboard();
+ }catch(e){toast("Upload failed: "+e.message)}
+ finally{btn.disabled=false;btn.textContent="Upload proof"}
+}
+async function loadUploads(){
+ if(!client||!currentUser)return;
+ try{
+  const {data,error}=await client.from("proof_uploads").select("*").eq("user_id",currentUser.id).order("created_at",{ascending:false});
+  if(error)throw error;
+  const files=data||[];
+  $("uploadList").innerHTML=files.length?files.map(f=>`<div class="file-item"><div class="row between wrap"><div class="grow"><b>${safe(f.title)}</b><div class="small">Week ${f.week_number} · ${safe(f.file_name)} · ${formatSize(f.file_size)}</div><div class="small">${safe(f.description||"")}</div></div><div class="actions"><button class="secondary" onclick="downloadProof('${f.id}')">Download</button><button class="danger" onclick="deleteProof('${f.id}')">Delete</button></div></div></div>`).join(""):'<div class="empty">No proof uploaded yet.</div>';
+  $("uploadCount").textContent=files.length;
+ }catch(e){$("uploadList").innerHTML=`<div class="empty">Could not load uploads: ${safe(e.message)}</div>`}
+}
+function formatSize(n){if(!n)return "";return n<1024*1024?(n/1024).toFixed(1)+" KB":(n/1024/1024).toFixed(1)+" MB"}
+async function downloadProof(id){
+ try{
+  const {data,error}=await client.from("proof_uploads").select("*").eq("id",id).eq("user_id",currentUser.id).single();
+  if(error)throw error;
+  const {data:blob,error:downloadError}=await client.storage.from(BUCKET).download(data.file_path);
+  if(downloadError)throw downloadError;
+  const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=data.file_name;a.click();URL.revokeObjectURL(url);
+ }catch(e){toast("Download failed: "+e.message)}
+}
+async function deleteProof(id){
+ if(!confirm("Delete this proof file permanently?"))return;
+ try{
+  const {data,error}=await client.from("proof_uploads").select("*").eq("id",id).eq("user_id",currentUser.id).single();
+  if(error)throw error;
+  const {error:storageError}=await client.storage.from(BUCKET).remove([data.file_path]);
+  if(storageError)throw storageError;
+  const {error:rowError}=await client.from("proof_uploads").delete().eq("id",id).eq("user_id",currentUser.id);
+  if(rowError)throw rowError;
+  toast("Proof deleted.");await loadUploads();renderDashboard();
+ }catch(e){toast("Delete failed: "+e.message)}
+}
+
+/* WEEKLY REPORTS */
+function renderReports(){
+ const start=new Date((db.plan.startDate||today())+"T00:00:00");
+ let html="";
+ for(let w=1;w<=13;w++){
+  const from=new Date(start);from.setDate(from.getDate()+(w-1)*7);
+  const to=new Date(from);to.setDate(to.getDate()+6);
+  const key=d=>d.toLocaleDateString("en-CA");
+  const list=db.tasks.filter(t=>t.date>=key(from)&&t.date<=key(to));
+  const done=list.filter(t=>t.done).length,p=percent(done,list.length);
+  html+=`<div class="file-item"><div class="row between"><b>Week ${w}</b><b>${p}%</b></div><div class="progress"><div style="width:${p}%"></div></div><div class="small">${done} of ${list.length} tasks completed · ${key(from)} to ${key(to)}</div></div>`;
+ }
+ $("weeklyReports").innerHTML=html;
+}
+
+/* BACKUP AND RESTORE */
+function exportBackup(){
+ const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download="90-day-success-tracker-backup.json";a.click();URL.revokeObjectURL(url);
+}
+async function restoreBackup(event){
+ const file=event.target.files[0];if(!file)return;
+ try{
+  const parsed=JSON.parse(await file.text());
+  if(!parsed||typeof parsed!=="object"||!Array.isArray(parsed.tasks))throw new Error("This does not look like a tracker backup.");
+  if(!confirm("Replace your current tracker data with this backup?"))return;
+  db=normalizeData(parsed);await saveCloud(true);renderAll();toast("Backup restored.");
+ }catch(e){toast("Restore failed: "+e.message)}
+ event.target.value="";
+}
+
+/* STARTUP AND SESSION RESTORE */
+(async function boot(){
+ weekOptions();
+ if(!initSupabase())return;
+ const {data:{session}}=await client.auth.getSession();
+ if(session?.user)await startApp(session.user);
+ client.auth.onAuthStateChange(async(event,session)=>{
+  if(event==="SIGNED_OUT"){currentUser=null;db=null;$("app").style.display="none";$("authScreen").classList.remove("hidden")}
+ });
+})();
+</script>
+</body>
+</html>
